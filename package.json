@@ -1,0 +1,25 @@
+{
+  "name": "app_point_menv_backend",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Backend para una estetetica",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "seed:import": "node data/seed.js --import",
+    "seed:destroy": "node data/seed.js --destroy"
+  },
+  "author": "@alexleon2411",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  },
+  "dependencies": {
+    "colors": "^1.4.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongoose": "^8.5.3"
+  }
+}
