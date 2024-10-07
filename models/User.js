@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 import { uniqueId } from '../utils/index.js' // token generado en utils
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 
 const userSchema = mongoose.Schema({
   name: {
