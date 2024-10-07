@@ -1,4 +1,5 @@
 import mongoose from "mongoose"
+import jwt from 'jsonwebtoken'
 
 function validateObjectId(id, res){
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -16,8 +17,19 @@ function handleNotFoundError(res, message) {
     })
 }
 
+//para crear un token unico que llamaremos desde el modelo de usuario
+const uniqueId = () => Date.now().toString(32) + Math.random().toString(32).substring(2)
+
+  const generateJWT = (id) => {
+    const token = jwt.sign({ id }, process.env.JWT_SECRET, {
+      expiresIn: '2d'
+    })
+    return token
+  }
 
 export {
   validateObjectId,
-  handleNotFoundError
+  handleNotFoundError,
+  uniqueId,
+  generateJWT
 }

@@ -6,9 +6,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js",
-    "seed:import": "node data/seed.js --import",
-    "seed:destroy": "node data/seed.js --destroy"
+    "dev": "nodemon index.js"
   },
   "author": "@alexleon2411",
   "license": "ISC",
@@ -16,10 +14,14 @@
     "nodemon": "^3.1.4"
   },
   "dependencies": {
+    "bcrypt": "^5.1.1",
     "colors": "^1.4.0",
     "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "mongoose": "^8.5.3"
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.5.3",
+    "nodemailer": "^6.9.15"
   }
 }

@@ -9,7 +9,6 @@ const createService = async (req, res) => {
       msg: error.message
     })
   }
- console.log('info received', req.body)
   try {
     // se toma el modelo de servicios y de esta manera se dan las especificaciones necesarias para crear un servicio
     const service = new serviceModel(req.body)
@@ -31,9 +30,18 @@ const getServices = async (req, res) => {
     console.log(error)
   }
 }
-const getService = async (req, res) => {
+const getFilteredServices = async (req, res) => {
+  try {
+    const category = req.query.category;  // Lee la categoría de los parámetros de consulta
+    const services = await serviceModel.find({ category: category });
+    res.json(services);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Error fetching services' });
+  }
+};
 
-  console.log('id received', req.params)
+const getService = async (req, res) => {
   // validar un objectID ya que mongo maneja objectsID no Id como sql
   const { id } =  req.params // se utiliza destrochoring para que extraiga el valor del parametro sino la valiable seria igual a el id con el valor que contiene el id del parametro
   if (validateObjectId(id, res)) return // se configura el validateObject de la siguiente manera para si existe un error en la funcion validate corte la ejecucion del resto de la funcion
@@ -47,8 +55,6 @@ const getService = async (req, res) => {
 }
 
 const updateService =  async (req, res) => {
-  console.log('datos recividos',req.body)
-  console.log('ID recivida', req.params)
   const { id } =  req.params // se utiliza destrochoring para que extraiga el valor del parametro sino la valiable seria igual a el id con el valor que contiene el id del parametro
   if (validateObjectId(id, res)) return
   // validar que el servicio exista
@@ -95,6 +101,7 @@ const deleteService = async (req, res) => {
 export {
   createService,
   getServices,
+  getFilteredServices,
   getService,
   updateService,
   deleteService

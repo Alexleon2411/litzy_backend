@@ -4,6 +4,9 @@ import colors from 'colors'
 import cors from 'cors'
 import { db } from './config/db.js'
 import servicesRoutes from './routes/servicesRoutes.js'
+import authRoutes from './routes/authRoutes.js'
+import appoitmentRoutes from './routes/appoitmentRoutes.js'
+import userRoutes from './routes/userRoutes.js'
 
 dotenv.config()
 
@@ -21,10 +24,8 @@ const whiteList = [process.env.FRONTEND_URL, undefined]
 
 const corsOptions = {
   origin: function(origin, callback) {
-    console.log(whiteList[0], origin)
     if (whiteList.includes(origin)) {
       //permitir la conexion
-      console.log('incuido')
       callback(null, true)
     }else {
       //no permitir la conexion
@@ -38,6 +39,9 @@ app.use(cors(corsOptions))
 
 //definit ruta
 app.use('/api/services', servicesRoutes)
+app.use('/api/auth', authRoutes)
+app.use('/api/appoitments', appoitmentRoutes)
+app.use('/api/users', userRoutes)
 
 
 
