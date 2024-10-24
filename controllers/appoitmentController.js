@@ -1,15 +1,31 @@
 import Appoitment from "../models/Appoitment.js";
-import { handleNotFoundError, validateObjectId } from "../utils/index.js";
+import { handleNotFoundError, validateObjectId, formatDate } from "../utils/index.js";
+import { parse, formatISO, startOfDay, endOfDay } from 'date-fns'
+import { sendEmailNewAppoitment, sendEmailUpdateAppoitment, sendEmailCanceledAppoitment } from "../emails/appoitmentEmailService.js";
 
 const createAppoitment = async (req, res) => {
   const appoitment = req.body
   appoitment.user = req.user._id.toString() // de esta manera se guarda el id del usuario para que sea la refenrencia de la cita, esto es lo que se debe cambiar para tener tambien como referencia el email del usuario
   try {
     const newAppoitment = new Appoitment(appoitment)
-    await newAppoitment.save()
+    const result = await newAppoitment.save()
+    await sendEmailNewAppoitment({
+      date: formatDate(result.date),
+      time: result.time
+    })
     res.json({msg: 'Cita Creada'})
   } catch (error) {
     console.log(error);
+  }
+}
+
+const getAllAppoitments = async (req, res) => {
+
+  try {
+    const appoitments = await Appoitment.find()
+    res.json(appoitments)
+  } catch (error) {
+    console.log("date format not valid",error)
   }
 }
 
@@ -32,28 +48,73 @@ const getAppoitmentsById = async (req, res) => {
 const getAppoitmentsBydate = async (req, res) => {
   try {
     const { date } = req.query
-    const dateRegex = /^([0-2][0-9]|(3)[0-1])\/(0[1-9]|1[0-2])\/\d{4}$/;
+    const newDate = parse(date, 'dd/MM/yyyy', new Date())
+    const isoDate = formatISO(newDate)
 
-    // Verificar si la fecha sigue el formato correcto
-    if (!dateRegex.test(date)) {
-      return res.status(400).json({ error: 'Formato de fecha inválido. Use dd/mm/yyyy.' });
-    }
-
-    // Descomponer la fecha para validaciones adicionales
-    const [day, month, year] = date.split('/').map(Number);
-
-    // Crear un objeto de fecha con los componentes
-    const dateObject = new Date(`${year}-${month}-${day}`);
-
-    // Validar que sea una fecha válida (por ejemplo, 31/02/2023 es inválido)
-    if (dateObject.getDate() !== day || dateObject.getMonth() + 1 !== month || dateObject.getFullYear() !== year) {
-      return res.status(400).json({ error: 'Fecha inválida.' });
-    }
-
-    const appoitments = await Appoitment.find({date}).select(
-      'time' // de esta forma se le pide solo la hora del objeto de citas
-    )
+    const appoitments = await Appoitment.find({ date: {
+      $gte : startOfDay(newDate),
+      $lte : endOfDay(isoDate)
+    }})
     res.json(appoitments)
+  } catch (error) {
+    console.log("date format not valid",error)
+  }
+}
+
+const updateAppoitment = async(req, res) => {
+  const { id } = req.params
+  if (validateObjectId(id, res)) return
+
+  const appoitment = await Appoitment.findById(id).populate('services')
+
+  if(!appoitment) {
+    return handleNotFoundError('La Cita no existe', res)
+  }
+  if (appoitment.user.toString() !== req.user._id.toString()){
+    const error = new Error('No tienes acceso')
+    return res.status(403).json({msg: error.message})
+  }
+  const { date, time, totalAmount, services } = req.body
+  appoitment.date = date
+  appoitment.time = time
+  appoitment.totalAmount = totalAmount
+  appoitment.services = services
+  try {
+    const result = await appoitment.save()
+    await sendEmailUpdateAppoitment({
+      date: formatDate(result.date),
+      time: result.time
+    })
+    res.json({
+      msg: 'Cita actualizada correctamente'
+    })
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+const deleteAppoitment = async(req, res) => {
+  const { id } = req.params
+  if (validateObjectId(id, res)) return
+
+  const appoitment = await Appoitment.findById(id).populate('services')
+
+  if(!appoitment) {
+    return handleNotFoundError('La Cita no existe', res)
+  }
+  if (appoitment.user.toString() !== req.user._id.toString()){
+    const error = new Error('No tienes acceso')
+    return res.status(403).json({msg: error.message})
+  }
+  try {
+    const result = await appoitment.deleteOne()
+    await sendEmailCanceledAppoitment({
+      date: formatDate(appoitment.date),
+      time: appoitment.time
+    })
+    res.json({
+      msg: 'Cita Cancelada'
+    })
   } catch (error) {
     console.log(error)
   }
@@ -62,5 +123,8 @@ const getAppoitmentsBydate = async (req, res) => {
 export {
   createAppoitment,
   getAppoitmentsBydate,
-  getAppoitmentsById
+  getAllAppoitments,
+  getAppoitmentsById,
+  updateAppoitment,
+  deleteAppoitment
 }
