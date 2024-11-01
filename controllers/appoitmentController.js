@@ -19,16 +19,6 @@ const createAppoitment = async (req, res) => {
   }
 }
 
-const getAllAppoitments = async (req, res) => {
-
-  try {
-    const appoitments = await Appoitment.find()
-    res.json(appoitments)
-  } catch (error) {
-    console.log("date format not valid",error)
-  }
-}
-
 const getAppoitmentsById = async (req, res) => {
   const { id } = req.params
   if (validateObjectId(id, res)) return
@@ -48,13 +38,23 @@ const getAppoitmentsById = async (req, res) => {
 const getAppoitmentsBydate = async (req, res) => {
   try {
     const { date } = req.query
+
+    console.log('this is the date', date)
     const newDate = parse(date, 'dd/MM/yyyy', new Date())
-    const isoDate = formatISO(newDate)
+    const startDate = startOfDay(newDate).toISOString();
+    const endDate = endOfDay(newDate).toISOString();
+
+    console.log("Inicio del día (UTC):", startDate);
+    console.log("Fin del día (UTC):", endDate);
 
     const appoitments = await Appoitment.find({ date: {
-      $gte : startOfDay(newDate),
-      $lte : endOfDay(isoDate)
+      $gte: new Date(startDate),
+      $lte: new Date(endDate),
     }})
+    // const appoitments = await Appoitment.find({ date: {
+    //   $gt : date
+    // }})
+    console.log(appoitments)
     res.json(appoitments)
   } catch (error) {
     console.log("date format not valid",error)
@@ -123,7 +123,6 @@ const deleteAppoitment = async(req, res) => {
 export {
   createAppoitment,
   getAppoitmentsBydate,
-  getAllAppoitments,
   getAppoitmentsById,
   updateAppoitment,
   deleteAppoitment

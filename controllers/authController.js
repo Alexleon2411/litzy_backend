@@ -1,5 +1,5 @@
 import User from '../models/User.js'
-import { sendEmailVerification } from '../emails/authEmails.js'
+import { sendEmailVerification, sendEmailPasswordReset } from '../emails/authEmails.js'
 import { generateJWT, uniqueId } from '../utils/index.js'
 
 const register = async (req, res) => {
@@ -84,7 +84,7 @@ const login = async (req, res) => {
 }
 
 const forgotPassword = async (req, res) => {
-  const { email } = req.body
+  const  email  = req.body._value
   const user = await User.findOne({email})
   if (!user){
     const error = new Error('El usuario no existe ');
@@ -92,9 +92,49 @@ const forgotPassword = async (req, res) => {
   }
   try {
     user.token = uniqueId()
-    await user.save()
+    const result = await user.save()
+    await sendEmailPasswordReset({
+      name: result.name,
+      email: result.email,
+      token: result.token
+    })
     res.json({
       msg: 'Hemos enviado un email con las instrucciones'
+    })
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+const verifyPasswordResetToken = async (req, res) => {
+  const { token } = req.params
+  const validToken = await User.findOne({token})
+
+  if(!validToken){
+    const error = new Error('token no valido');
+    return res.status(400).json({msg: error.message})
+
+  }
+  res.json({msg: 'token valido'})
+}
+const updatePassword = async (req, res) => {
+  const { token } = req.params
+  const { password } = req.body
+  console.log(req.body)
+  const user = await User.findOne({token})
+
+  if(!user){
+    const error = new Error('token no valido');
+    return res.status(400).json({msg: error.message})
+
+  }
+
+  try {
+    user.token = ''
+    user.password = password
+    await user.save()
+    res.json({
+      msg: 'contraseña Modificada'
     })
   } catch (error) {
     console.log(error)
@@ -107,11 +147,36 @@ const user = async (req, res) => {
     user // y de esta manera estariamos respondiendo con el usuario en cuestion
   )
 }
+const admin = async (req, res) => {
+  const { user } = req // de esta manera se mantiene la sesion del usuario y se le puede dar acceso a los datos requeridos
+  if(!user.admin){
+    const error = new Error('Accion no valida')
+    return res.status(403).json({msg: error.message})
+  }
+  res.json(
+    user // y de esta manera estariamos respondiendo con el usuario en cuestion
+  )
+}
+
+const getUser = async (req, res) => {
+  const {id} = req.params
+  const { user } = req
+  if( !user.admin) {
+    const error = new Error('accion no valida')
+    return res.status(403).json({msg: error.message})
+  }
+  const searchedUser = await User.findById(id)
+  res.json(searchedUser)
+}
 
 export {
   register,
   verifyAccount,
   login,
   forgotPassword,
-  user
+  verifyPasswordResetToken,
+  updatePassword,
+  user,
+  admin,
+  getUser,
 }
